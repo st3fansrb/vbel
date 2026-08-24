@@ -1,0 +1,23 @@
+{
+  "name": "@vbel/demo-cli",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Composition root: runs the full delivery sequence against a real chain. Apps compose core, domains and adapters; nothing composes an app.",
+  "type": "module",
+  "scripts": {
+    "demo": "tsx src/run-delivery-demo.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@vbel/adapter-solana": "workspace:*",
+    "@vbel/config": "workspace:*",
+    "@vbel/core": "workspace:*",
+    "@vbel/domain-delivery": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
