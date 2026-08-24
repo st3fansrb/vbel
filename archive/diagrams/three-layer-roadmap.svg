@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="330" viewBox="0 0 1080 330">
+<title>Three-layer roadmap</title>
+<desc>Registry now, marketplace next, own funding pool later, with a we-are-here marker on the registry layer.</desc>
+<rect x="0" y="0" width="1080" height="330" fill="#FFFFFF"/>
+<text x="540.0" y="30" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#2C2C2A">FMCG Receivables Rail — three-layer roadmap</text>
+<text x="540.0" y="50" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#5F5E5A">Layer 1 is the Demo Day build. Layers 2-3 are long-term, not built yet.</text>
+<rect x="50" y="62" width="140" height="24" rx="12" fill="#0F6E56" stroke="#0F6E56" stroke-width="1"/>
+<text x="120" y="78" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#FFFFFF">WE ARE HERE</text>
+<line x1="120" y1="86" x2="120" y2="99" stroke="#0F6E56" stroke-width="1.5"/>
+<polygon points="120,100 115,90 125,90" fill="#0F6E56"/>
+<rect x="30" y="100" width="300" height="170" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/>
+<rect x="46" y="112" width="62" height="20" rx="10" fill="#0F6E56" stroke="#0F6E56" stroke-width="1"/>
+<text x="77" y="126" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF">NOW</text>
+<text x="180.0" y="162" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="17" font-weight="bold" fill="#04342C">Registry</text>
+<text x="180.0" y="192" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#085041">No license required</text>
+<text x="180.0" y="214" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#085041">Fee or subscription revenue</text>
+<text x="180.0" y="236" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#085041">Paid by factors, not distributors</text>
+<line x1="334" y1="185" x2="377" y2="185" stroke="#5F5E5A" stroke-width="1.5"/><polygon points="386,185 376,180 376,190" fill="#5F5E5A"/>
+<rect x="390" y="100" width="300" height="170" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<rect x="406" y="112" width="62" height="20" rx="10" fill="#5F5E5A" stroke="#5F5E5A" stroke-width="1"/>
+<text x="437" y="126" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF">NEXT</text>
+<text x="540.0" y="162" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="17" font-weight="bold" fill="#2C2C2A">Marketplace</text>
+<text x="540.0" y="192" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#5F5E5A">Multiple licensed factors</text>
+<text x="540.0" y="214" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#5F5E5A">e.g. Instant Factoring, Factris</text>
+<text x="540.0" y="236" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#5F5E5A">Network effect + volume fee</text>
+<line x1="694" y1="185" x2="737" y2="185" stroke="#5F5E5A" stroke-width="1.5"/><polygon points="746,185 736,180 736,190" fill="#5F5E5A"/>
+<rect x="750" y="100" width="300" height="170" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<rect x="766" y="112" width="62" height="20" rx="10" fill="#5F5E5A" stroke="#5F5E5A" stroke-width="1"/>
+<text x="797" y="126" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#FFFFFF">LATER</text>
+<text x="900.0" y="162" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="17" font-weight="bold" fill="#2C2C2A">Funding pool</text>
+<text x="900.0" y="192" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#5F5E5A">Direct financing, later</text>
+<text x="900.0" y="214" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#5F5E5A">Needs license + approx 340k EUR</text>
+<text x="900.0" y="236" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#5F5E5A">Needs 12+ months of real data</text>
+<text x="540.0" y="310" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#5F5E5A">Colors show timing, not quality: teal = active now, gray = future, order not fixed</text>
+</svg>

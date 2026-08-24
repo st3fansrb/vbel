@@ -1,0 +1,16 @@
+{
+  "name": "vbel",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Verifiable Business Event Ledger - ETH Belgrade x Superteam Balkan hackathon",
+  "scripts": {
+    "build": "pnpm -r --filter=./packages/* --filter=./adapters/* build",
+    "test": "pnpm -r --filter=./packages/* --filter=./adapters/* test",
+    "typecheck": "pnpm -r --filter=./packages/* --filter=./adapters/* typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "packageManager": "pnpm@11.23.0"
+}
