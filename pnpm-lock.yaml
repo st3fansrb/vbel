@@ -33,6 +33,9 @@ importers:
       '@vbel/config':
         specifier: workspace:*
         version: link:../../packages/config
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
       tsx:
         specifier: ^4.19.0
         version: 4.23.12

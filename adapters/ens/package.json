@@ -16,7 +16,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "smoke:resolve": "tsx scripts/smoke-resolve.ts",
-    "smoke:manage": "tsx scripts/smoke-manage.ts"
+    "smoke:manage": "tsx scripts/smoke-manage.ts",
+    "init:owner": "tsx scripts/init-owner-key.ts",
+    "register:parent": "tsx scripts/register-parent-name.ts"
   },
   "dependencies": {
     "@ensdomains/ensjs": "^4.3.1",
@@ -28,6 +30,7 @@
     "@vbel/config": "workspace:*",
     "typescript": "^5.6.0",
     "tsx": "^4.19.0",
-    "vitest": "^2.1.0"
+    "vitest": "^2.1.0",
+    "dotenv": "^16.4.5"
   }
 }
