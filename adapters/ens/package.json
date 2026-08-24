@@ -1,0 +1,33 @@
+{
+  "name": "@vbel/adapter-ens",
+  "version": "0.0.1",
+  "description": "ENS identity: resolve issuer text records (read, no key needed), and manage subnames/text records under the VBEL parent name (write, needs an owner key). Execution only — config is injected.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "smoke:resolve": "tsx scripts/smoke-resolve.ts",
+    "smoke:manage": "tsx scripts/smoke-manage.ts"
+  },
+  "dependencies": {
+    "@ensdomains/ensjs": "^4.3.1",
+    "@vbel/core": "workspace:*",
+    "viem": "^2.35.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "@vbel/config": "workspace:*",
+    "typescript": "^5.6.0",
+    "tsx": "^4.19.0",
+    "vitest": "^2.1.0"
+  }
+}
