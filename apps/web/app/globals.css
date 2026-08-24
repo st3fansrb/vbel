@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/**
+ * VBEL design tokens — institutional document register.
+ *
+ * The rules this encodes:
+ *   - Paper, not screen. Warm off-white ground, near-black ink, hairline rules.
+ *   - Colour carries exactly one meaning: record status. Nothing else is
+ *     coloured, so a verdict flipping red is the loudest thing on the page.
+ *   - Monospace is reserved for cryptographic material — hashes, signatures,
+ *     JSON paths. If it is monospace, a machine produced it.
+ */
+@theme {
+  --color-paper: #ffffff;
+  --color-panel: #fafaf9;
+  --color-panel-sunk: #f5f5f4;
+
+  --color-ink: #18181b;
+  --color-ink-muted: #52525b;
+  --color-ink-faint: #a1a1aa;
+
+  --color-rule: #e7e5e4;
+  --color-rule-strong: #d6d3d1;
+
+  --color-accent: #1e3a8a;
+
+  --color-verified: #15803d;
+  --color-verified-bg: #f0fdf4;
+  --color-tampered: #b91c1c;
+  --color-tampered-bg: #fef2f2;
+  --color-superseded: #b45309;
+  --color-superseded-bg: #fffbeb;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+html,
+body {
+  background: var(--color-panel);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/**
+ * The small uppercase metadata label that gives the whole thing its
+ * document feel. Used for field names, never for content.
+ */
+.label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+  font-weight: 500;
+}
+
+/* Long hashes must be able to break, or they blow out the layout. */
+.hash {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  word-break: break-all;
+  color: var(--color-ink-muted);
+}

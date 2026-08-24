@@ -1,0 +1,31 @@
+{
+  "name": "@vbel/web",
+  "version": "0.0.1",
+  "private": true,
+  "description": "VBEL issue-and-verify app. The browser verifier imports the same @vbel/core the API does — that is the only structural reason they cannot disagree about what a valid record is.",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@vbel/adapter-solana": "workspace:*",
+    "@vbel/config": "workspace:*",
+    "@vbel/core": "workspace:*",
+    "@vbel/domain-delivery": "workspace:*",
+    "next": "^16.3.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.7.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "dotenv": "^16.4.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.6.0"
+  }
+}
