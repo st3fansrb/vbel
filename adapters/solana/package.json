@@ -15,6 +15,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "init:devnet": "tsx scripts/init-devnet-issuer.ts",
     "smoke:anchor": "tsx scripts/smoke-anchor.ts"
   },
   "dependencies": {
