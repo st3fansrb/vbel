@@ -14,9 +14,9 @@
  */
 import { resolve } from "node:path";
 import { config as loadDotenv } from "dotenv";
-import { formatEther, parseAbi } from "viem";
-import { getResolver } from "@ensdomains/ensjs/public";
-import { setResolver } from "@ensdomains/ensjs/wallet";
+import { formatEther } from "viem";
+import { getPrice } from "@ensdomains/ensjs/public";
+import { commitName, registerName } from "@ensdomains/ensjs/wallet";
 import { randomSecret } from "@ensdomains/ensjs/utils";
 import { loadEnsOwnerConfig } from "@vbel/config";
 import { createChainClient, createReadClient, createWriteClient } from "../src/client.js";
@@ -26,14 +26,6 @@ loadDotenv({ path: resolve(import.meta.dirname, "../../../.env") });
 const DURATION_SECONDS = 365 * 24 * 60 * 60;
 /** The registrar's minimum commitment age is 60s; a margin avoids a revert. */
 const COMMITMENT_WAIT_MS = 75_000;
-
-const controllerAbi = parseAbi([
-  "function makeCommitment(string name, address owner, uint256 duration, bytes32 secret, address resolver, bytes[] data, bool reverseRecord, uint16 ownerControlledFuses) view returns (bytes32)",
-  "function commit(bytes32 commitment)",
-  "function register(string name, address owner, uint256 duration, bytes32 secret, address resolver, bytes[] data, bool reverseRecord, uint16 ownerControlledFuses) payable",
-  "function rentPrice(string name, uint256 duration) view returns ((uint256 base, uint256 premium))",
-  "function available(string name) view returns (bool)"
-]);
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -76,33 +68,19 @@ async function main() {
   }
   console.log(`balance: ${formatEther(balance)} ETH`);
 
-  const controllerAddress =
-    config.network === "mainnet"
-      ? (wallet.chain.contracts as any)?.ensEthRegistrarController?.address ?? "0x253553366Da8546fC250F225fe3d25d0C782303b"
-      : (wallet.chain.contracts as any)?.wrappedEthRegistrarController?.address ?? "0x4477cAc137F3353Ca35060E01E5aEb777a1Ca01B";
-
-  const defaultResolverAddress =
-    config.network === "mainnet"
-      ? (wallet.chain.contracts as any)?.ensPublicResolver?.address ?? "0x231b0Ee14048e9dCcD1d247744d114a4EB5E8E63"
-      : (wallet.chain.contracts as any)?.wrappedPublicResolver?.address ?? "0x8948458626811dd0c23EB25Cc74291247077cC51";
-
-  const available = await chain.readContract({
-    address: controllerAddress,
-    abi: controllerAbi,
-    functionName: "available",
-    args: [label],
-  });
+  const available = await ens.getAvailable({ name });
   if (!available) {
     console.error(`${name} is already registered — choose another label`);
     process.exit(1);
   }
 
-  const preCheckPrice = await chain.readContract({
-    address: controllerAddress,
-    abi: controllerAbi,
-    functionName: "rentPrice",
-    args: [label, BigInt(DURATION_SECONDS)],
-  });
+  // Price is quoted here only to fail fast on an obviously insufficient
+  // balance. The registrar's price is USD-pegged via a live oracle, and the
+  // mandatory wait below is long enough for it to drift — a quote taken now
+  // and reused 75s later is exactly what caused a real revert during
+  // testing. The value actually sent is re-quoted fresh right before
+  // registering instead.
+  const preCheckPrice = await getPrice(ens, { nameOrNames: name, duration: DURATION_SECONDS });
   const preCheckTotal = preCheckPrice.base + preCheckPrice.premium;
   if (balance < preCheckTotal) {
     console.error(`insufficient balance: need at least ~${formatEther(preCheckTotal)} ETH, have ${formatEther(balance)}`);
@@ -110,21 +88,10 @@ async function main() {
   }
   console.log(`price: ~${formatEther(preCheckTotal)} ETH for 1 year (re-quoted right before registering)`);
 
-  const secret = randomSecret();
-  const commitment = await chain.readContract({
-    address: controllerAddress,
-    abi: controllerAbi,
-    functionName: "makeCommitment",
-    args: [label, owner, BigInt(DURATION_SECONDS), secret, defaultResolverAddress, [], false, 0],
-  });
+  const params = { name, owner, duration: DURATION_SECONDS, secret: randomSecret() };
 
   console.log("\n1/2 committing...");
-  const commitHash = await wallet.writeContract({
-    address: controllerAddress,
-    abi: controllerAbi,
-    functionName: "commit",
-    args: [commitment],
-  });
+  const commitHash = await commitName(wallet, { ...params, account: wallet.account });
   console.log(`   tx ${commitHash}`);
   await chain.waitForTransactionReceipt({ hash: commitHash });
   console.log("   committed");
@@ -132,12 +99,7 @@ async function main() {
   console.log(`\n   waiting ${COMMITMENT_WAIT_MS / 1000}s for the commitment to age...`);
   await sleep(COMMITMENT_WAIT_MS);
 
-  const price = await chain.readContract({
-    address: controllerAddress,
-    abi: controllerAbi,
-    functionName: "rentPrice",
-    args: [label, BigInt(DURATION_SECONDS)],
-  });
+  const price = await getPrice(ens, { nameOrNames: name, duration: DURATION_SECONDS });
   const total = price.base + price.premium;
   // 20% buffer on a quote taken right now, not 75s ago — the registrar
   // refunds whatever it does not need.
@@ -149,30 +111,10 @@ async function main() {
   }
 
   console.log("\n2/2 registering...");
-  const registerHash = await wallet.writeContract({
-    address: controllerAddress,
-    abi: controllerAbi,
-    functionName: "register",
-    args: [label, owner, BigInt(DURATION_SECONDS), secret, defaultResolverAddress, [], false, 0],
-    value,
-  });
+  const registerHash = await registerName(wallet, { ...params, value, account: wallet.account });
   console.log(`   tx ${registerHash}`);
   const receipt = await chain.waitForTransactionReceipt({ hash: registerHash });
   console.log(`   registered in block ${receipt.blockNumber}`);
-
-  const activeResolver = await getResolver(ens, { name });
-  if (!activeResolver && defaultResolverAddress) {
-    console.log(`\nsetting resolver on ${name}...`);
-    const resHash = await setResolver(wallet, {
-      name,
-      contract: "nameWrapper",
-      resolverAddress: defaultResolverAddress,
-      account: wallet.account,
-    });
-    console.log(`   tx ${resHash}`);
-    await chain.waitForTransactionReceipt({ hash: resHash });
-    console.log(`   resolver set to ${defaultResolverAddress}`);
-  }
 
   console.log(`\n${name} is now owned by ${owner}`);
   console.log(`add it to .env:\n\n  ENS_PARENT_NAME=${name}\n`);

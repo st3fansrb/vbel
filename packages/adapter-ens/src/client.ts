@@ -1,11 +1,24 @@
-import { createEnsPublicClient, createEnsWalletClient, type EnsPublicClient, type EnsWalletClient } from "@ensdomains/ensjs";
+import {
+  addEnsContracts,
+  createEnsPublicClient,
+  createEnsWalletClient,
+  type EnsPublicClient,
+  type EnsWalletClient,
+} from "@ensdomains/ensjs";
 import { createPublicClient, http, type PublicClient } from "viem";
 import { mainnet, sepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import type { EnsOwnerConfig, EnsReadConfig } from "@vbel/config";
 
+/**
+ * viem's bare chain objects carry almost no ENS addresses — sepolia ships
+ * only multicall3 and the universal resolver. Every ensjs action that has
+ * to reach a registrar, resolver or name wrapper reads those addresses off
+ * the chain object, so without this the controller is simply undefined and
+ * registration cannot work.
+ */
 function chainFor(network: "mainnet" | "sepolia") {
-  return network === "mainnet" ? mainnet : sepolia;
+  return addEnsContracts(network === "mainnet" ? mainnet : sepolia);
 }
 
 /** ENS-specific reads: names, records, availability. Carries no generic chain actions. */
