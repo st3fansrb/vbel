@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { loadSolanaConfig } from "@vbel/config";
+import { loadSolanaConfig, loadEthereumConfig } from "@vbel/config";
 import { SolanaMemoAdapter } from "@vbel/adapter-solana";
-import type { AnchorReceipt } from "@vbel/core";
+import { EthereumAdapter } from "@vbel/adapter-ethereum";
+import type { AnchorReceipt, LedgerAdapter } from "@vbel/core";
 
 /**
  * SolanaMemoAdapter needs the issuer keypair to construct, even though
@@ -14,6 +15,8 @@ export const dynamic = "force-dynamic";
 
 const HASH_PATTERN = /^sha256:[0-9a-f]{64}$/;
 const NETWORKS = new Set(["solana-devnet", "solana-mainnet", "ethereum-sepolia", "ethereum-mainnet"]);
+const SOLANA_NETWORKS = new Set(["solana-devnet", "solana-mainnet"]);
+const ETHEREUM_NETWORKS = new Set(["ethereum-sepolia", "ethereum-mainnet"]);
 
 function isAnchorReceipt(value: unknown): value is AnchorReceipt {
   if (typeof value !== "object" || value === null) return false;
@@ -29,23 +32,41 @@ function isAnchorReceipt(value: unknown): value is AnchorReceipt {
 }
 
 export async function POST(request: Request) {
-  let body: { eventHash?: unknown; receipt?: unknown };
+  let body: { eventHash?: unknown; receipt?: unknown; chain?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "body must be JSON" }, { status: 400 });
   }
 
-  const { eventHash, receipt } = body;
+  const { eventHash, receipt, chain = "solana" } = body;
+  if (chain !== "solana" && chain !== "ethereum") {
+    return NextResponse.json({ error: 'chain must be "solana" or "ethereum"' }, { status: 400 });
+  }
   if (typeof eventHash !== "string" || !HASH_PATTERN.test(eventHash)) {
     return NextResponse.json({ error: "eventHash must match sha256:<64 hex chars>" }, { status: 400 });
   }
   if (!isAnchorReceipt(receipt)) {
     return NextResponse.json({ error: "receipt must be a valid AnchorReceipt" }, { status: 400 });
   }
+  if (chain === "solana" && !SOLANA_NETWORKS.has(receipt.network)) {
+    return NextResponse.json(
+      { error: `receipt network "${receipt.network}" does not match chain "${chain}"` },
+      { status: 400 }
+    );
+  }
+  if (chain === "ethereum" && !ETHEREUM_NETWORKS.has(receipt.network)) {
+    return NextResponse.json(
+      { error: `receipt network "${receipt.network}" does not match chain "${chain}"` },
+      { status: 400 }
+    );
+  }
 
   try {
-    const adapter = new SolanaMemoAdapter(loadSolanaConfig());
+    const adapter: LedgerAdapter =
+      chain === "ethereum"
+        ? new EthereumAdapter(loadEthereumConfig())
+        : new SolanaMemoAdapter(loadSolanaConfig());
     const result = await adapter.verify(receipt, eventHash);
     return NextResponse.json(result);
   } catch (error) {

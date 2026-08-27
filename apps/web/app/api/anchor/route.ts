@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { loadSolanaConfig } from "@vbel/config";
+import { loadSolanaConfig, loadEthereumConfig } from "@vbel/config";
 import { SolanaMemoAdapter } from "@vbel/adapter-solana";
+import { EthereumAdapter } from "@vbel/adapter-ethereum";
+import type { LedgerAdapter } from "@vbel/core";
 
 /**
  * Anchoring needs the issuer's signing key, so it happens here and never in
@@ -16,14 +18,17 @@ export const dynamic = "force-dynamic";
 const HASH_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
 export async function POST(request: Request) {
-  let body: { eventHash?: unknown; metadata?: unknown };
+  let body: { eventHash?: unknown; metadata?: unknown; chain?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "body must be JSON" }, { status: 400 });
   }
 
-  const { eventHash, metadata } = body;
+  const { eventHash, metadata, chain = "solana" } = body;
+  if (chain !== "solana" && chain !== "ethereum") {
+    return NextResponse.json({ error: 'chain must be "solana" or "ethereum"' }, { status: 400 });
+  }
   if (typeof eventHash !== "string" || !HASH_PATTERN.test(eventHash)) {
     return NextResponse.json({ error: "eventHash must match sha256:<64 hex chars>" }, { status: 400 });
   }
@@ -44,7 +49,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const adapter = new SolanaMemoAdapter(loadSolanaConfig());
+    const adapter: LedgerAdapter =
+      chain === "ethereum"
+        ? new EthereumAdapter(loadEthereumConfig())
+        : new SolanaMemoAdapter(loadSolanaConfig());
     const receipt = await adapter.anchor(eventHash, safeMetadata);
     return NextResponse.json(receipt);
   } catch (error) {

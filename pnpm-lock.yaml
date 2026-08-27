@@ -48,6 +48,9 @@ importers:
       '@vbel/adapter-ens':
         specifier: workspace:*
         version: link:../../packages/adapter-ens
+      '@vbel/adapter-ethereum':
+        specifier: workspace:*
+        version: link:../../packages/adapter-ethereum
       '@vbel/adapter-identity-static':
         specifier: workspace:*
         version: link:../../packages/adapter-identity-static
