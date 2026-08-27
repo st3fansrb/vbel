@@ -32,7 +32,9 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function main() {
-  const label = process.argv[2];
+  // `pnpm run register:parent -- <label>` forwards the literal "--" into
+  // argv (Node does not strip it), so the label is whatever comes after it.
+  const label = process.argv.slice(2).filter((arg) => arg !== "--")[0];
   if (!label) {
     console.error("usage: pnpm --filter @vbel/adapter-ens register:parent -- <label>");
     process.exit(1);
@@ -72,17 +74,19 @@ async function main() {
     process.exit(1);
   }
 
-  const price = await getPrice(ens, { nameOrNames: name, duration: DURATION_SECONDS });
-  const total = price.base + price.premium;
-  // Registration reverts if the ETH price moves against a tight value, so
-  // send a 10% buffer; the registrar refunds whatever it does not need.
-  const value = (total * 110n) / 100n;
-  console.log(`price: ${formatEther(total)} ETH for 1 year (sending ${formatEther(value)} with buffer)`);
-
-  if (balance < value) {
-    console.error(`insufficient balance: need ~${formatEther(value)} ETH, have ${formatEther(balance)}`);
+  // Price is quoted here only to fail fast on an obviously insufficient
+  // balance. The registrar's price is USD-pegged via a live oracle, and the
+  // mandatory wait below is long enough for it to drift — a quote taken now
+  // and reused 75s later is exactly what caused a real revert during
+  // testing. The value actually sent is re-quoted fresh right before
+  // registering instead.
+  const preCheckPrice = await getPrice(ens, { nameOrNames: name, duration: DURATION_SECONDS });
+  const preCheckTotal = preCheckPrice.base + preCheckPrice.premium;
+  if (balance < preCheckTotal) {
+    console.error(`insufficient balance: need at least ~${formatEther(preCheckTotal)} ETH, have ${formatEther(balance)}`);
     process.exit(1);
   }
+  console.log(`price: ~${formatEther(preCheckTotal)} ETH for 1 year (re-quoted right before registering)`);
 
   const params = { name, owner, duration: DURATION_SECONDS, secret: randomSecret() };
 
@@ -94,6 +98,17 @@ async function main() {
 
   console.log(`\n   waiting ${COMMITMENT_WAIT_MS / 1000}s for the commitment to age...`);
   await sleep(COMMITMENT_WAIT_MS);
+
+  const price = await getPrice(ens, { nameOrNames: name, duration: DURATION_SECONDS });
+  const total = price.base + price.premium;
+  // 20% buffer on a quote taken right now, not 75s ago — the registrar
+  // refunds whatever it does not need.
+  const value = (total * 120n) / 100n;
+  console.log(`\nfresh price: ${formatEther(total)} ETH (sending ${formatEther(value)} with buffer)`);
+  if (balance < value) {
+    console.error(`insufficient balance: need ~${formatEther(value)} ETH, have ${formatEther(balance)}`);
+    process.exit(1);
+  }
 
   console.log("\n2/2 registering...");
   const registerHash = await registerName(wallet, { ...params, value, account: wallet.account });

@@ -18,7 +18,8 @@
     "smoke:resolve": "tsx scripts/smoke-resolve.ts",
     "smoke:manage": "tsx scripts/smoke-manage.ts",
     "init:owner": "tsx scripts/init-owner-key.ts",
-    "register:parent": "tsx scripts/register-parent-name.ts"
+    "register:parent": "tsx scripts/register-parent-name.ts",
+    "setup:demo-issuers": "tsx scripts/setup-demo-issuers.ts"
   },
   "dependencies": {
     "@ensdomains/ensjs": "^4.3.1",
