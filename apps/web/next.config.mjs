@@ -23,7 +23,17 @@ const nextConfig = {
     "@vbel/domain-delivery",
     "@vbel/adapter-solana",
     "@vbel/adapter-identity-static",
+    "@vbel/adapter-ens",
   ],
+  // None of these are secret — a public RPC URL, a network name, a public
+  // ENS name — so they're safe to inline into the browser bundle. This is
+  // what lets ENS resolution run client-side, matching every other
+  // verification check on this page.
+  env: {
+    ENS_RPC_URL: process.env.ENS_RPC_URL,
+    ENS_NETWORK: process.env.ENS_NETWORK,
+    ENS_PARENT_NAME: process.env.ENS_PARENT_NAME,
+  },
 };
 
 export default nextConfig;

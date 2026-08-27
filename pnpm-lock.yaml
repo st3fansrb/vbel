@@ -45,6 +45,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@vbel/adapter-ens':
+        specifier: workspace:*
+        version: link:../../packages/adapter-ens
       '@vbel/adapter-identity-static':
         specifier: workspace:*
         version: link:../../packages/adapter-identity-static

@@ -10,6 +10,10 @@ function explorerUrl(signature: string): string {
   return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
 }
 
+function ensExplorerUrl(name: string, network: "mainnet" | "sepolia"): string {
+  return network === "mainnet" ? `https://app.ens.domains/${name}` : `https://sepolia.app.ens.domains/${name}`;
+}
+
 export function RecordCard({
   record,
   verdict,
@@ -17,6 +21,8 @@ export function RecordCard({
   onAnchor,
   anchoring,
   contaminatedByLabels,
+  ensParentName,
+  ensNetwork,
 }: {
   record: LedgerRecord;
   verdict: RecordVerdict | undefined;
@@ -24,11 +30,15 @@ export function RecordCard({
   onAnchor: () => void;
   anchoring: boolean;
   contaminatedByLabels: string[];
+  /** Set only when ENS resolution is actually configured — see page.tsx. */
+  ensParentName: string | null;
+  ensNetwork: "mainnet" | "sepolia";
 }) {
   const { envelope } = record.event;
   const tampered = verdict !== undefined && !verdict.payloadValid;
   const disputedUpstream = !tampered && contaminatedByLabels.length > 0;
   const changedPaths = new Set((verdict?.differences ?? []).map((d) => d.path));
+  const ensName = ensParentName ? `${envelope.issuerId.replace("urn:vbel:org:", "")}.${ensParentName}` : null;
 
   return (
     <article
@@ -108,7 +118,24 @@ export function RecordCard({
               <span className="text-tampered">invalid</span>
             )}
             {verdict?.counterSigned && <span className="text-ink-faint"> · counter-signed</span>}
-            {verdict?.identityChecked && <span className="text-ink-faint"> · identity confirmed</span>}
+            {verdict?.identityChecked && (
+              <span className="text-ink-faint">
+                {" "}
+                ·{" "}
+                {ensName ? (
+                  <a
+                    className="text-accent underline underline-offset-2 hover:no-underline"
+                    href={ensExplorerUrl(ensName, ensNetwork)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    resolved via {ensName}
+                  </a>
+                ) : (
+                  "identity confirmed"
+                )}
+              </span>
+            )}
           </Field>
           <Field label="Anchor">
             {record.anchor ? (

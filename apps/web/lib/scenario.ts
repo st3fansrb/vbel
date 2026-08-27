@@ -1,5 +1,6 @@
-import { counterSignPreviousEvent, generateKeyPair, signEnvelope, type IssuerAttestation, type KeyPair } from "@vbel/core";
+import { counterSignPreviousEvent, signEnvelope, type IdentityResolver, type IssuerAttestation, type KeyPair } from "@vbel/core";
 import { StaticIdentityRegistry } from "@vbel/adapter-identity-static";
+import { createReadClient, EnsIdentityResolver } from "@vbel/adapter-ens";
 import {
   buildAcceptanceEvent,
   buildCorrectionEvent,
@@ -7,19 +8,18 @@ import {
   type AcceptancePayload,
   type DispatchPayload,
 } from "@vbel/domain-delivery";
+import { loadDemoKeys } from "./demoKeys";
 import type { LedgerRecord } from "./types";
 
 export const SUPPLIER_ID = "urn:vbel:org:supplier-a";
 export const BUYER_ID = "urn:vbel:org:buyer-b";
 
 /**
- * Trust root for this demo: a registry we assemble ourselves and can show
- * in full, binding each issuerId to the actual key it signs with in this
- * session. See adapter-identity-static — this is the honest placeholder
- * for ENS, did:web or an eIDAS chain, not a stand-in for having solved
- * identity.
+ * Fallback trust root: a registry we assemble ourselves and can show in
+ * full, binding each issuerId to the actual key it signs with. Used only
+ * when ENS_PARENT_NAME isn't configured yet — see adapter-identity-static.
  */
-function buildRegistry(supplierPublicKeyHex: string, buyerPublicKeyHex: string): StaticIdentityRegistry {
+function buildStaticRegistry(supplierPublicKeyHex: string, buyerPublicKeyHex: string): StaticIdentityRegistry {
   const validFrom = new Date(Date.now() - 60_000).toISOString();
   const attestations: IssuerAttestation[] = [
     { issuerId: SUPPLIER_ID, publicKey: supplierPublicKeyHex, attestedBy: "urn:vbel:demo:registry", validFrom, validUntil: null, signature: null },
@@ -28,9 +28,29 @@ function buildRegistry(supplierPublicKeyHex: string, buyerPublicKeyHex: string):
   return new StaticIdentityRegistry({ registryId: "urn:vbel:demo:registry", attestations });
 }
 
+/**
+ * Trust root for this demo: each issuer's signing key is resolved live from
+ * an ENS text record on Sepolia, not from a list we assemble ourselves.
+ * Falls back to the static registry when ENS_PARENT_NAME isn't set yet
+ * (e.g. local dev before the one-time `setup:demo-issuers` script has run)
+ * so the rest of the app keeps working either way.
+ */
+function buildResolver(supplierPublicKeyHex: string, buyerPublicKeyHex: string): IdentityResolver {
+  const rpcUrl = process.env.ENS_RPC_URL;
+  const parentName = process.env.ENS_PARENT_NAME;
+  const network = process.env.ENS_NETWORK === "mainnet" ? "mainnet" : "sepolia";
+
+  if (!rpcUrl || !parentName) {
+    return buildStaticRegistry(supplierPublicKeyHex, buyerPublicKeyHex);
+  }
+
+  const client = createReadClient({ rpcUrl, network });
+  return new EnsIdentityResolver(client, parentName, `urn:vbel:ens:${parentName}`);
+}
+
 export interface Scenario {
   records: LedgerRecord[];
-  resolver: StaticIdentityRegistry;
+  resolver: IdentityResolver;
   /**
    * The buyer's key, kept only so a later correction can be issued by the
    * same identity the registry attests — not a fresh, unregistered one.
@@ -39,15 +59,15 @@ export interface Scenario {
 }
 
 /**
- * Builds and signs the shipment in the browser, with keys generated on load.
- * Nothing here is canned: the signatures are real ed25519 signatures over
- * real canonical bytes, so every verdict the UI shows was actually computed.
+ * Builds and signs the shipment in the browser, with fixed demo keys (see
+ * demoKeys.ts) rather than a fresh keypair per load — the ENS resolver
+ * checks against a pubkey text record set once, on-chain, so the signing
+ * key has to stay put across reloads to keep matching it.
  */
 export async function buildScenario(): Promise<Scenario> {
   const shipmentRef = `SHP-${Math.floor(Date.now() / 1000)}`;
-  const supplier = await generateKeyPair();
-  const buyer = await generateKeyPair();
-  const resolver = buildRegistry(supplier.publicKeyHex, buyer.publicKeyHex);
+  const { supplier, buyer } = await loadDemoKeys();
+  const resolver = buildResolver(supplier.publicKeyHex, buyer.publicKeyHex);
 
   const dispatchPayload: DispatchPayload = {
     shipmentRef,

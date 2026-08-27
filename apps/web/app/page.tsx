@@ -1,8 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { validateChain, type AnchorReceipt, type DerivedStatus, type KeyPair, type LedgerVerificationResult } from "@vbel/core";
-import type { StaticIdentityRegistry } from "@vbel/adapter-identity-static";
+import {
+  validateChain,
+  type AnchorReceipt,
+  type DerivedStatus,
+  type IdentityResolver,
+  type KeyPair,
+  type LedgerVerificationResult,
+} from "@vbel/core";
 import { RecordCard } from "@/components/RecordCard";
 import { computeBlastRadius } from "@/lib/blastRadius";
 import { buildCorrection, buildScenario } from "@/lib/scenario";
@@ -12,7 +18,7 @@ import type { LedgerRecord, RecordVerdict } from "@/lib/types";
 
 export default function Page() {
   const [records, setRecords] = useState<LedgerRecord[]>([]);
-  const [resolver, setResolver] = useState<StaticIdentityRegistry | null>(null);
+  const [resolver, setResolver] = useState<IdentityResolver | null>(null);
   const [buyerKeys, setBuyerKeys] = useState<KeyPair | null>(null);
   const [verdicts, setVerdicts] = useState<Map<string, RecordVerdict>>(new Map());
   const [anchoringId, setAnchoringId] = useState<string | null>(null);
@@ -107,6 +113,8 @@ export default function Page() {
   }
 
   const shipmentRef = records[0]!.event.envelope.subjectId.replace("urn:vbel:shipment:", "");
+  const ensParentName = process.env.ENS_PARENT_NAME ?? null;
+  const ensNetwork = process.env.ENS_NETWORK === "mainnet" ? "mainnet" : "sepolia";
 
   return (
     <div className="min-h-screen">
@@ -222,6 +230,8 @@ export default function Page() {
                   contaminatedByLabels={[...(blastRadius.get(record.event.envelope.eventId) ?? [])].map(
                     (id) => labelById.get(id) ?? id
                   )}
+                  ensParentName={ensParentName}
+                  ensNetwork={ensNetwork}
                 />
               </li>
             );
