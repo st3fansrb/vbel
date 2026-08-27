@@ -110,43 +110,45 @@ export default function Page() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-rule bg-paper">
+      <header className="bg-accent">
         <div className="mx-auto flex max-w-3xl flex-wrap items-baseline justify-between gap-2 px-6 py-4">
           <div className="flex items-baseline gap-3">
-            <span className="text-lg font-semibold tracking-tight">VBEL</span>
-            <span className="text-xs text-ink-muted">Verifiable Business Event Ledger</span>
+            <span className="text-lg font-semibold tracking-tight text-white">VBEL</span>
+            <span className="text-xs text-white/70">Verifiable Business Event Ledger</span>
           </div>
-          <span className="label">Solana devnet</span>
+          <span className="border border-white/30 px-2 py-0.5 text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-white/90">
+            Solana devnet
+          </span>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-10">
-        <section className="mb-12 border-b border-rule pb-10">
-          <h1 className="mb-3 max-w-prose text-2xl font-semibold leading-tight tracking-tight text-ink">
+        <section className="mb-12 bg-accent-bg px-6 py-8 sm:px-8 sm:py-10">
+          <h1 className="mb-3 max-w-prose border-l-4 border-accent pl-4 text-2xl font-semibold leading-tight tracking-tight text-ink">
             We don't stop you from lying. We make you commit to it.
           </h1>
-          <p className="mb-8 max-w-prose text-sm leading-relaxed text-ink-muted">
+          <p className="mb-8 max-w-prose pl-[calc(1rem+4px)] text-sm leading-relaxed text-ink-muted">
             Two companies depend on one shared record — a delivery, an acceptance, a correction. Today that record
             lives in one party's system, and that party can quietly change it later. The dispute is never about the
             goods. It's about whose number is the real one.
           </p>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            <div>
+            <div className="border-t-2 border-accent pt-2">
               <div className="label mb-1.5">Signed &amp; hash-linked</div>
               <p className="text-xs leading-relaxed text-ink-muted">
                 Every event is signed by its issuer and chained to the one before it — reordering or silent
                 insertion is detectable.
               </p>
             </div>
-            <div>
+            <div className="border-t-2 border-accent pt-2">
               <div className="label mb-1.5">Anchored, not trusted</div>
               <p className="text-xs leading-relaxed text-ink-muted">
                 A hash is anchored on Solana so no single party — including us — can rewrite the ordering after
                 the fact.
               </p>
             </div>
-            <div>
+            <div className="border-t-2 border-accent pt-2">
               <div className="label mb-1.5">Corrections, not deletions</div>
               <p className="text-xs leading-relaxed text-ink-muted">
                 A dispute doesn't erase history. It supersedes it — and everything chained to a disputed record
@@ -182,14 +184,14 @@ export default function Page() {
         <div className="mb-8 flex flex-wrap gap-2">
           <button
             onClick={toggleTamper}
-            className="border border-rule-strong bg-paper px-3 py-1.5 text-sm hover:bg-panel-sunk"
+            className="border border-accent/40 bg-paper px-3 py-1.5 text-sm text-accent hover:bg-accent-bg"
           >
             {isTampered ? "Restore stored payload" : "Tamper with the stored payload"}
           </button>
           <button
             onClick={issueCorrection}
             disabled={hasCorrection || busy}
-            className="border border-rule-strong bg-paper px-3 py-1.5 text-sm hover:bg-panel-sunk disabled:opacity-40"
+            className="border border-accent/40 bg-paper px-3 py-1.5 text-sm text-accent hover:bg-accent-bg disabled:opacity-40"
           >
             Issue a correction
           </button>
@@ -208,7 +210,7 @@ export default function Page() {
                   className="absolute -left-[1.6875rem] top-4 h-2 w-2 rounded-full border-2 border-panel"
                   style={{
                     background:
-                      status === "SUPERSEDED" ? "var(--color-superseded)" : "var(--color-ink)",
+                      status === "SUPERSEDED" ? "var(--color-superseded)" : "var(--color-accent)",
                   }}
                 />
                 <RecordCard

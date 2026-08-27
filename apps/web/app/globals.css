@@ -5,8 +5,10 @@
  *
  * The rules this encodes:
  *   - Paper, not screen. Warm off-white ground, near-black ink, hairline rules.
- *   - Colour carries exactly one meaning: record status. Nothing else is
- *     coloured, so a verdict flipping red is the loudest thing on the page.
+ *   - Two colour roles, not one. Status colour (verified/tampered/superseded)
+ *     still belongs to record verdicts alone — that rule doesn't change. Navy
+ *     accent is the second role: brand, structure and the primary action,
+ *     never a verdict. Neither ever borrows the other's meaning.
  *   - Monospace is reserved for cryptographic material — hashes, signatures,
  *     JSON paths. If it is monospace, a machine produced it.
  */
@@ -23,6 +25,8 @@
   --color-rule-strong: #d6d3d1;
 
   --color-accent: #1e3a8a;
+  --color-accent-strong: #17296b;
+  --color-accent-bg: #eef2fb;
 
   --color-verified: #15803d;
   --color-verified-bg: #f0fdf4;

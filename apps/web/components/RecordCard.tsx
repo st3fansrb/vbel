@@ -133,7 +133,7 @@ export function RecordCard({
               <button
                 onClick={onAnchor}
                 disabled={anchoring}
-                className="border border-rule-strong px-2 py-0.5 text-xs hover:bg-panel-sunk disabled:opacity-50"
+                className="bg-accent px-2 py-0.5 text-xs text-white hover:bg-accent-strong disabled:opacity-50"
               >
                 {anchoring ? "anchoring…" : "Anchor on Solana"}
               </button>
