@@ -1,6 +1,6 @@
 {
   "name": "@vbel/web",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "VBEL issue-and-verify app. The browser verifier imports the same @vbel/core the API does — that is the only structural reason they cannot disagree about what a valid record is.",
   "type": "module",
