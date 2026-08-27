@@ -1,4 +1,4 @@
-import { getRecords } from "@ensdomains/ensjs/public";
+import { getRecords, getResolver } from "@ensdomains/ensjs/public";
 import type { EnsPublicClient } from "@ensdomains/ensjs";
 
 /**
@@ -19,11 +19,18 @@ export interface IssuerRecords {
 
 /** Read-only. Works with any EnsPublicClient — no private key involved. */
 export async function resolveIssuerRecords(client: EnsPublicClient, name: string): Promise<IssuerRecords> {
+  const parentName = name.includes(".") ? name.slice(name.indexOf(".") + 1) : name;
+  let resolverAddress = await getResolver(client, { name }).catch(() => null);
+  if (!resolverAddress && parentName !== name) {
+    resolverAddress = await getResolver(client, { name: parentName }).catch(() => null);
+  }
+
   const result = await getRecords(client, {
     name,
     texts: [...OEL_TEXT_KEYS],
     contentHash: false,
     abi: false,
+    ...(resolverAddress ? { resolver: { address: resolverAddress, fallbackOnly: false } } : {}),
   });
 
   const byKey = new Map(result.texts.map((text) => [text.key, text.value]));

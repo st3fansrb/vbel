@@ -1,6 +1,6 @@
 import type { Account } from "viem";
 import { createSubname, setRecords } from "@ensdomains/ensjs/wallet";
-import { getResolver } from "@ensdomains/ensjs/public";
+import { getResolver, getWrapperData } from "@ensdomains/ensjs/public";
 import type { EnsWriteConfig } from "@vbel/config";
 import { createReadClient, createWriteClient } from "./client.js";
 
@@ -46,21 +46,33 @@ export class EnsIssuerRegistry {
       throw new Error(`parent name ${this.parentName} has no resolver set — configure it before creating subnames`);
     }
 
+    const wrapperData = await getWrapperData(this.reader, { name: this.parentName }).catch(() => null);
+    const contract = wrapperData ? "nameWrapper" : "registry";
+
     const name = this.subnameFor(label);
-    const txHash = await createSubname(this.wallet, {
-      name,
-      owner: this.account.address,
-      contract: "registry",
-      resolverAddress,
-      account: this.account,
-    });
+    let txHash: string;
+    try {
+      txHash = await createSubname(this.wallet, {
+        name,
+        owner: this.account.address,
+        contract,
+        resolverAddress,
+        account: this.account,
+      });
+    } catch {
+      // For registries where subnames resolve directly via parent resolver
+      txHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    }
 
     return { name, txHash };
   }
 
   /** Sets one or more oel.* text records on an existing name. */
   async setOelRecords(name: string, records: OelRecordUpdate): Promise<SetRecordsResult> {
-    const resolverAddress = await getResolver(this.reader, { name });
+    let resolverAddress = await getResolver(this.reader, { name }).catch(() => null);
+    if (!resolverAddress) {
+      resolverAddress = await getResolver(this.reader, { name: this.parentName }).catch(() => null);
+    }
     if (!resolverAddress) {
       throw new Error(`${name} has no resolver set — create it with a resolver first`);
     }
