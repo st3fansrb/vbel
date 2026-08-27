@@ -6,6 +6,20 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@vbel/web", "dev"],
       "port": 3000
+    },
+    {
+      "name": "web-shell",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "-C",
+        "/Users/sirbustefanandrei/Documents/Proiecte-personale/vbel-shell",
+        "--filter",
+        "@vbel/web",
+        "dev",
+        "--port",
+        "3002"
+      ],
+      "port": 3002
     }
   ]
 }
