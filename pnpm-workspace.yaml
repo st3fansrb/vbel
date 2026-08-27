@@ -1,7 +1,5 @@
 packages:
   - "packages/*"
-  - "adapters/*"
-  - "domains/*"
   - "apps/*"
 allowBuilds:
   bufferutil: true

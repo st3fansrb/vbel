@@ -13,6 +13,7 @@ export async function verifyRecord(record: LedgerRecord): Promise<RecordVerdict>
   return {
     signatureValid: signature.valid,
     signatureIssues: signature.issues,
+    identityChecked: signature.identityChecked,
     payloadValid: payload.valid,
     differences: payload.valid ? [] : diffPayloads(record.issuerPayload, record.storedPayload),
     counterSigned: record.event.counterSignature !== null,

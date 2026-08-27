@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "description": "Verifiable Business Event Ledger - ETH Belgrade x Superteam Balkan hackathon",
   "scripts": {
-    "build": "pnpm -r --filter=./packages/* --filter=./domains/* --filter=./adapters/* --filter=./apps/* build",
-    "test": "pnpm -r --filter=./packages/* --filter=./domains/* --filter=./adapters/* --filter=./apps/* test",
-    "typecheck": "pnpm -r --filter=./packages/* --filter=./domains/* --filter=./adapters/* --filter=./apps/* typecheck"
+    "build": "pnpm -r --filter=./packages/* --filter=./apps/* build",
+    "test": "pnpm -r --filter=./packages/* --filter=./apps/* test",
+    "typecheck": "pnpm -r --filter=./packages/* --filter=./apps/* typecheck"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
