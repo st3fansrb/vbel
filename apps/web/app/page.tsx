@@ -121,10 +121,45 @@ export default function Page() {
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-10">
+        <section className="mb-12 border-b border-rule pb-10">
+          <h1 className="mb-3 max-w-prose text-2xl font-semibold leading-tight tracking-tight text-ink">
+            We don't stop you from lying. We make you commit to it.
+          </h1>
+          <p className="mb-8 max-w-prose text-sm leading-relaxed text-ink-muted">
+            Two companies depend on one shared record — a delivery, an acceptance, a correction. Today that record
+            lives in one party's system, and that party can quietly change it later. The dispute is never about the
+            goods. It's about whose number is the real one.
+          </p>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            <div>
+              <div className="label mb-1.5">Signed &amp; hash-linked</div>
+              <p className="text-xs leading-relaxed text-ink-muted">
+                Every event is signed by its issuer and chained to the one before it — reordering or silent
+                insertion is detectable.
+              </p>
+            </div>
+            <div>
+              <div className="label mb-1.5">Anchored, not trusted</div>
+              <p className="text-xs leading-relaxed text-ink-muted">
+                A hash is anchored on Solana so no single party — including us — can rewrite the ordering after
+                the fact.
+              </p>
+            </div>
+            <div>
+              <div className="label mb-1.5">Corrections, not deletions</div>
+              <p className="text-xs leading-relaxed text-ink-muted">
+                A dispute doesn't erase history. It supersedes it — and everything chained to a disputed record
+                gets flagged, automatically.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-5">
           <div>
             <div className="label mb-1">Shipment</div>
-            <h1 className="font-mono text-2xl tracking-tight">{shipmentRef}</h1>
+            <div className="font-mono text-2xl tracking-tight">{shipmentRef}</div>
           </div>
           <div className="text-right">
             <div className="label mb-1">Chain integrity</div>
@@ -134,16 +169,12 @@ export default function Page() {
           </div>
         </div>
 
-        <p className="mb-2 max-w-prose text-base font-medium leading-snug text-ink">
-          We don't stop you from lying. We make you commit to it.
+        <p className="mb-2 max-w-prose text-sm leading-relaxed text-ink-muted">
+          Every event below is signed by its issuer and hash-linked to the one before it. Verification runs
+          entirely in your browser against the same library that issued them — no server is asked to vouch for
+          anything.
         </p>
-        <p className="mb-8 max-w-prose text-sm leading-relaxed text-ink-muted">
-          Two companies, one shared record. Every event below is signed by its issuer and hash-linked to the one
-          before it. Verification runs entirely in your browser against the same library that issued them — no
-          server is asked to vouch for anything.
-        </p>
-
-        <p className="mb-2 text-xs text-ink-faint">
+        <p className="mb-4 text-xs text-ink-faint">
           Try it — tamper the stored payload and watch it get caught, then issue a correction and watch it
           supersede without deleting. If a correction chains from a disputed record, it gets flagged too, even
           though its own signature still verifies.
