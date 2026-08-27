@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { validateChain, type AnchorReceipt, type DerivedStatus, type KeyPair, type LedgerVerificationResult } from "@vbel/core";
 import type { StaticIdentityRegistry } from "@vbel/adapter-identity-static";
 import { RecordCard } from "@/components/RecordCard";
+import { computeBlastRadius } from "@/lib/blastRadius";
 import { buildCorrection, buildScenario } from "@/lib/scenario";
 import { restore, tamperAcceptance } from "@/lib/tamper";
 import { verifyAll } from "@/lib/verify";
@@ -33,6 +34,8 @@ export default function Page() {
   }, [records, resolver]);
 
   const chain = records.length > 0 ? validateChain(records.map((r) => r.event)) : null;
+  const blastRadius = computeBlastRadius(records, verdicts);
+  const labelById = new Map(records.map((r) => [r.event.envelope.eventId, r.label]));
   const acceptance = records.find((r) => r.label === "Acceptance");
   const isTampered = acceptance
     ? verdicts.get(acceptance.event.envelope.eventId)?.payloadValid === false
@@ -131,12 +134,20 @@ export default function Page() {
           </div>
         </div>
 
+        <p className="mb-2 max-w-prose text-base font-medium leading-snug text-ink">
+          We don't stop you from lying. We make you commit to it.
+        </p>
         <p className="mb-8 max-w-prose text-sm leading-relaxed text-ink-muted">
           Two companies, one shared record. Every event below is signed by its issuer and hash-linked to the one
           before it. Verification runs entirely in your browser against the same library that issued them — no
           server is asked to vouch for anything.
         </p>
 
+        <p className="mb-2 text-xs text-ink-faint">
+          Try it — tamper the stored payload and watch it get caught, then issue a correction and watch it
+          supersede without deleting. If a correction chains from a disputed record, it gets flagged too, even
+          though its own signature still verifies.
+        </p>
         <div className="mb-8 flex flex-wrap gap-2">
           <button
             onClick={toggleTamper}
@@ -175,6 +186,9 @@ export default function Page() {
                   status={status}
                   onAnchor={() => anchor(record)}
                   anchoring={anchoringId === record.event.envelope.eventId}
+                  contaminatedByLabels={[...(blastRadius.get(record.event.envelope.eventId) ?? [])].map(
+                    (id) => labelById.get(id) ?? id
+                  )}
                 />
               </li>
             );

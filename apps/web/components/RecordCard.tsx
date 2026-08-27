@@ -16,21 +16,30 @@ export function RecordCard({
   status,
   onAnchor,
   anchoring,
+  contaminatedByLabels,
 }: {
   record: LedgerRecord;
   verdict: RecordVerdict | undefined;
   status: DerivedStatus;
   onAnchor: () => void;
   anchoring: boolean;
+  contaminatedByLabels: string[];
 }) {
   const { envelope } = record.event;
   const tampered = verdict !== undefined && !verdict.payloadValid;
+  const disputedUpstream = !tampered && contaminatedByLabels.length > 0;
   const changedPaths = new Set((verdict?.differences ?? []).map((d) => d.path));
 
   return (
     <article
-      className={`border bg-paper ${tampered ? "border-tampered/40" : "border-rule"}`}
-      style={tampered ? { boxShadow: "inset 3px 0 0 var(--color-tampered)" } : undefined}
+      className={`border bg-paper ${tampered ? "border-tampered/40" : disputedUpstream ? "border-superseded/40" : "border-rule"}`}
+      style={
+        tampered
+          ? { boxShadow: "inset 3px 0 0 var(--color-tampered)" }
+          : disputedUpstream
+            ? { boxShadow: "inset 3px 0 0 var(--color-superseded)" }
+            : undefined
+      }
     >
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-rule px-5 py-3">
         <div className="flex items-center gap-3">
@@ -40,15 +49,30 @@ export function RecordCard({
           {status === "ACTIVE" && <Badge tone="neutral">Active</Badge>}
         </div>
 
-        {verdict && (
-          <Badge tone={tampered ? "tampered" : "verified"}>
-            {tampered ? "✗ Payload altered" : "✓ Verified"}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {disputedUpstream && <Badge tone="superseded">⚠ Downstream dispute</Badge>}
+          {verdict && (
+            <Badge tone={tampered ? "tampered" : "verified"}>
+              {tampered ? "✗ Payload altered" : "✓ Verified"}
+            </Badge>
+          )}
+        </div>
       </header>
 
       <div className="space-y-5 px-5 py-4">
         <PayloadSummary payload={record.storedPayload} changedPaths={changedPaths} />
+
+        {disputedUpstream && (
+          <div className="border border-superseded/30 bg-superseded-bg px-4 py-3">
+            <div className="label mb-2 text-superseded">Downstream of a disputed record</div>
+            <p className="text-xs text-ink-muted">
+              This record's own hash and signature still verify — the problem is inherited, not local. It chains
+              from <span className="font-medium text-ink">{contaminatedByLabels.join(", ")}</span>, whose stored
+              payload no longer matches what was signed. Once one record is caught, everything built on it is
+              suspect too.
+            </p>
+          </div>
+        )}
 
         {tampered && (
           <div className="border border-tampered/30 bg-tampered-bg px-4 py-3">
@@ -84,6 +108,7 @@ export function RecordCard({
               <span className="text-tampered">invalid</span>
             )}
             {verdict?.counterSigned && <span className="text-ink-faint"> · counter-signed</span>}
+            {verdict?.identityChecked && <span className="text-ink-faint"> · identity confirmed</span>}
           </Field>
           <Field label="Anchor">
             {record.anchor ? (
