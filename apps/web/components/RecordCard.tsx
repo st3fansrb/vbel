@@ -1,13 +1,36 @@
 "use client";
 
-import type { DerivedStatus } from "@vbel/core";
+import type { DerivedStatus, LedgerNetwork } from "@vbel/core";
 import { Badge } from "./Badge";
 import { Field, Mono, truncateHash } from "./Field";
 import { PayloadSummary } from "./PayloadSummary";
+import type { Chain } from "@/lib/anchor";
 import type { LedgerRecord, RecordVerdict } from "@/lib/types";
 
-function explorerUrl(signature: string): string {
-  return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+function explorerUrl(network: LedgerNetwork, reference: string): string {
+  switch (network) {
+    case "solana-devnet":
+      return `https://explorer.solana.com/tx/${reference}?cluster=devnet`;
+    case "solana-mainnet":
+      return `https://explorer.solana.com/tx/${reference}`;
+    case "ethereum-sepolia":
+      return `https://sepolia.etherscan.io/tx/${reference}`;
+    case "ethereum-mainnet":
+      return `https://etherscan.io/tx/${reference}`;
+  }
+}
+
+function networkLabel(network: LedgerNetwork): string {
+  switch (network) {
+    case "solana-devnet":
+      return "Solana devnet";
+    case "solana-mainnet":
+      return "Solana";
+    case "ethereum-sepolia":
+      return "Ethereum Sepolia";
+    case "ethereum-mainnet":
+      return "Ethereum";
+  }
 }
 
 function ensExplorerUrl(name: string, network: "mainnet" | "sepolia"): string {
@@ -27,8 +50,8 @@ export function RecordCard({
   record: LedgerRecord;
   verdict: RecordVerdict | undefined;
   status: DerivedStatus;
-  onAnchor: () => void;
-  anchoring: boolean;
+  onAnchor: (chain: Chain) => void;
+  anchoring: Chain | null;
   contaminatedByLabels: string[];
   /** Set only when ENS resolution is actually configured — see page.tsx. */
   ensParentName: string | null;
@@ -142,11 +165,11 @@ export function RecordCard({
               <div className="flex flex-col gap-0.5">
                 <a
                   className="text-accent underline underline-offset-2 hover:no-underline"
-                  href={explorerUrl(record.anchor.reference)}
+                  href={explorerUrl(record.anchor.network, record.anchor.reference)}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  slot {record.anchor.block}
+                  {networkLabel(record.anchor.network)} · block {record.anchor.block}
                 </a>
                 {record.chainVerification === null ? (
                   <span className="text-xs text-ink-faint">checking chain…</span>
@@ -157,13 +180,22 @@ export function RecordCard({
                 )}
               </div>
             ) : (
-              <button
-                onClick={onAnchor}
-                disabled={anchoring}
-                className="bg-accent px-2 py-0.5 text-xs text-white hover:bg-accent-strong disabled:opacity-50"
-              >
-                {anchoring ? "anchoring…" : "Anchor on Solana"}
-              </button>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => onAnchor("solana")}
+                  disabled={anchoring !== null}
+                  className="bg-accent px-2 py-0.5 text-xs text-white hover:bg-accent-strong disabled:opacity-50"
+                >
+                  {anchoring === "solana" ? "anchoring…" : "Anchor on Solana"}
+                </button>
+                <button
+                  onClick={() => onAnchor("ethereum")}
+                  disabled={anchoring !== null}
+                  className="border border-accent/40 bg-paper px-2 py-0.5 text-xs text-accent hover:bg-accent-bg disabled:opacity-50"
+                >
+                  {anchoring === "ethereum" ? "anchoring…" : "Anchor on Ethereum"}
+                </button>
+              </div>
             )}
           </Field>
         </div>

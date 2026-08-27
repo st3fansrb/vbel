@@ -1,121 +1,12 @@
-"use client";
+import Link from "next/link";
 
-import { useCallback, useEffect, useState } from "react";
-import {
-  validateChain,
-  type AnchorReceipt,
-  type DerivedStatus,
-  type IdentityResolver,
-  type KeyPair,
-  type LedgerVerificationResult,
-} from "@vbel/core";
-import { RecordCard } from "@/components/RecordCard";
-import { computeBlastRadius } from "@/lib/blastRadius";
-import { buildCorrection, buildScenario } from "@/lib/scenario";
-import { restore, tamperAcceptance } from "@/lib/tamper";
-import { verifyAll } from "@/lib/verify";
-import type { LedgerRecord, RecordVerdict } from "@/lib/types";
-
-export default function Page() {
-  const [records, setRecords] = useState<LedgerRecord[]>([]);
-  const [resolver, setResolver] = useState<IdentityResolver | null>(null);
-  const [buyerKeys, setBuyerKeys] = useState<KeyPair | null>(null);
-  const [verdicts, setVerdicts] = useState<Map<string, RecordVerdict>>(new Map());
-  const [anchoringId, setAnchoringId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    buildScenario().then(({ records, resolver, buyerKeys }) => {
-      setRecords(records);
-      setResolver(resolver);
-      setBuyerKeys(buyerKeys);
-    });
-  }, []);
-
-  // Every change to the records re-runs verification from scratch, in the
-  // browser. Nothing is cached, so nothing can go stale and quietly lie.
-  useEffect(() => {
-    if (records.length > 0) verifyAll(records, resolver ?? undefined).then(setVerdicts);
-  }, [records, resolver]);
-
-  const chain = records.length > 0 ? validateChain(records.map((r) => r.event)) : null;
-  const blastRadius = computeBlastRadius(records, verdicts);
-  const labelById = new Map(records.map((r) => [r.event.envelope.eventId, r.label]));
-  const acceptance = records.find((r) => r.label === "Acceptance");
-  const isTampered = acceptance
-    ? verdicts.get(acceptance.event.envelope.eventId)?.payloadValid === false
-    : false;
-  const hasCorrection = records.some((r) => r.label === "Correction");
-
-  const anchor = useCallback(async (record: LedgerRecord) => {
-    setAnchoringId(record.event.envelope.eventId);
-    setError(null);
-    try {
-      const response = await fetch("/api/anchor", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          eventHash: record.event.eventHash,
-          metadata: { ref: record.event.envelope.subjectId, type: record.label.toLowerCase() },
-        }),
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.detail ?? body.error ?? "anchoring failed");
-
-      const receipt = body as AnchorReceipt;
-      setRecords((current) =>
-        current.map((r) => (r.event.envelope.eventId === record.event.envelope.eventId ? { ...r, anchor: receipt } : r))
-      );
-
-      // The anchor call returning a receipt only proves the transaction was
-      // submitted. Re-fetching it from the chain and confirming the memo
-      // still carries this hash is a separate check — see /api/verify.
-      const verifyResponse = await fetch("/api/verify", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ eventHash: record.event.eventHash, receipt }),
-      });
-      if (verifyResponse.ok) {
-        const chainVerification = (await verifyResponse.json()) as LedgerVerificationResult;
-        setRecords((current) =>
-          current.map((r) =>
-            r.event.envelope.eventId === record.event.envelope.eventId ? { ...r, chainVerification } : r
-          )
-        );
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "anchoring failed");
-    } finally {
-      setAnchoringId(null);
-    }
-  }, []);
-
-  const toggleTamper = () => {
-    setRecords((current) =>
-      current.map((r) => (r.label === "Acceptance" ? (isTampered ? restore(r) : tamperAcceptance(r)) : r))
-    );
-  };
-
-  const issueCorrection = async () => {
-    if (!buyerKeys) return;
-    setBusy(true);
-    try {
-      const correction = await buildCorrection(records, buyerKeys);
-      setRecords((current) => [...current, correction]);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (records.length === 0) {
-    return <main className="mx-auto max-w-3xl px-6 py-16 text-sm text-ink-muted">Signing records…</main>;
-  }
-
-  const shipmentRef = records[0]!.event.envelope.subjectId.replace("urn:vbel:shipment:", "");
-  const ensParentName = process.env.ENS_PARENT_NAME ?? null;
-  const ensNetwork = process.env.ENS_NETWORK === "mainnet" ? "mainnet" : "sepolia";
-
+/**
+ * A role chooser, not a landing page — nobody has picked a role yet, so
+ * there is no nav to show. The three doors are the whole product: a
+ * supplier issues, a buyer accepts or disputes, anyone can verify. See
+ * app/supplier, app/buyer, app/verify.
+ */
+export default function Home() {
   return (
     <div className="min-h-screen">
       <header className="bg-accent">
@@ -125,7 +16,7 @@ export default function Page() {
             <span className="text-xs text-white/70">Verifiable Business Event Ledger</span>
           </div>
           <span className="border border-white/30 px-2 py-0.5 text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-white/90">
-            Solana devnet
+            Solana devnet · Ethereum Sepolia
           </span>
         </div>
       </header>
@@ -135,110 +26,38 @@ export default function Page() {
           <h1 className="mb-3 max-w-prose border-l-4 border-accent pl-4 text-2xl font-semibold leading-tight tracking-tight text-ink">
             We don't stop you from lying. We make you commit to it.
           </h1>
-          <p className="mb-8 max-w-prose pl-[calc(1rem+4px)] text-sm leading-relaxed text-ink-muted">
+          <p className="max-w-prose pl-[calc(1rem+4px)] text-sm leading-relaxed text-ink-muted">
             Two companies depend on one shared record — a delivery, an acceptance, a correction. Today that record
-            lives in one party's system, and that party can quietly change it later. The dispute is never about the
-            goods. It's about whose number is the real one.
+            lives in one party's system, and that party can quietly change it later. Pick a role below to see it
+            work.
           </p>
-
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            <div className="border-t-2 border-accent pt-2">
-              <div className="label mb-1.5">Signed &amp; hash-linked</div>
-              <p className="text-xs leading-relaxed text-ink-muted">
-                Every event is signed by its issuer and chained to the one before it — reordering or silent
-                insertion is detectable.
-              </p>
-            </div>
-            <div className="border-t-2 border-accent pt-2">
-              <div className="label mb-1.5">Anchored, not trusted</div>
-              <p className="text-xs leading-relaxed text-ink-muted">
-                A hash is anchored on Solana so no single party — including us — can rewrite the ordering after
-                the fact.
-              </p>
-            </div>
-            <div className="border-t-2 border-accent pt-2">
-              <div className="label mb-1.5">Corrections, not deletions</div>
-              <p className="text-xs leading-relaxed text-ink-muted">
-                A dispute doesn't erase history. It supersedes it — and everything chained to a disputed record
-                gets flagged, automatically.
-              </p>
-            </div>
-          </div>
         </section>
 
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-5">
-          <div>
-            <div className="label mb-1">Shipment</div>
-            <div className="font-mono text-2xl tracking-tight">{shipmentRef}</div>
-          </div>
-          <div className="text-right">
-            <div className="label mb-1">Chain integrity</div>
-            <div className={chain?.valid ? "text-sm text-verified" : "text-sm text-tampered"}>
-              {chain?.valid ? "✓ hash-linked, unbroken" : "✗ chain broken"}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Link href="/supplier" className="group border border-rule bg-paper p-5 transition-colors hover:border-accent">
+            <div className="label mb-2">Step 1</div>
+            <h2 className="mb-1.5 text-base font-semibold text-ink group-hover:text-accent">I'm the supplier</h2>
+            <p className="text-xs leading-relaxed text-ink-muted">
+              Sign a dispatch and send a link — the record travels in the URL, no server holds it.
+            </p>
+          </Link>
+          <Link href="/buyer" className="group border border-rule bg-paper p-5 transition-colors hover:border-accent">
+            <div className="label mb-2">Step 2</div>
+            <h2 className="mb-1.5 text-base font-semibold text-ink group-hover:text-accent">I'm the buyer</h2>
+            <p className="text-xs leading-relaxed text-ink-muted">
+              Open the supplier's link, accept what actually arrived, and send back a signed acceptance.
+            </p>
+          </Link>
+          <Link href="/verify" className="group border border-rule bg-paper p-5 transition-colors hover:border-accent">
+            <div className="label mb-2">Step 3</div>
+            <h2 className="mb-1.5 text-base font-semibold text-ink group-hover:text-accent">Verify a record</h2>
+            <p className="text-xs leading-relaxed text-ink-muted">
+              Paste any link. Verification runs entirely in this browser — nothing is taken on trust.
+            </p>
+          </Link>
         </div>
 
-        <p className="mb-2 max-w-prose text-sm leading-relaxed text-ink-muted">
-          Every event below is signed by its issuer and hash-linked to the one before it. Verification runs
-          entirely in your browser against the same library that issued them — no server is asked to vouch for
-          anything.
-        </p>
-        <p className="mb-4 text-xs text-ink-faint">
-          Try it — tamper the stored payload and watch it get caught, then issue a correction and watch it
-          supersede without deleting. If a correction chains from a disputed record, it gets flagged too, even
-          though its own signature still verifies.
-        </p>
-        <div className="mb-8 flex flex-wrap gap-2">
-          <button
-            onClick={toggleTamper}
-            className="border border-accent/40 bg-paper px-3 py-1.5 text-sm text-accent hover:bg-accent-bg"
-          >
-            {isTampered ? "Restore stored payload" : "Tamper with the stored payload"}
-          </button>
-          <button
-            onClick={issueCorrection}
-            disabled={hasCorrection || busy}
-            className="border border-accent/40 bg-paper px-3 py-1.5 text-sm text-accent hover:bg-accent-bg disabled:opacity-40"
-          >
-            Issue a correction
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-6 border border-tampered/30 bg-tampered-bg px-4 py-3 text-sm text-tampered">{error}</div>
-        )}
-
-        <ol className="relative space-y-5 border-l border-rule pl-6">
-          {records.map((record) => {
-            const status = (chain?.derivedStatus.get(record.event.envelope.eventId) ?? "ACTIVE") as DerivedStatus;
-            return (
-              <li key={record.event.envelope.eventId} className="relative">
-                <span
-                  className="absolute -left-[1.6875rem] top-4 h-2 w-2 rounded-full border-2 border-panel"
-                  style={{
-                    background:
-                      status === "SUPERSEDED" ? "var(--color-superseded)" : "var(--color-accent)",
-                  }}
-                />
-                <RecordCard
-                  record={record}
-                  verdict={verdicts.get(record.event.envelope.eventId)}
-                  status={status}
-                  onAnchor={() => anchor(record)}
-                  anchoring={anchoringId === record.event.envelope.eventId}
-                  contaminatedByLabels={[...(blastRadius.get(record.event.envelope.eventId) ?? [])].map(
-                    (id) => labelById.get(id) ?? id
-                  )}
-                  ensParentName={ensParentName}
-                  ensNetwork={ensNetwork}
-                />
-              </li>
-            );
-          })}
-        </ol>
-
-        <footer className="mt-10 border-t border-rule pt-5 text-xs leading-relaxed text-ink-faint">
+        <footer className="mt-12 border-t border-rule pt-5 text-xs leading-relaxed text-ink-faint">
           Integrity is not truth. VBEL proves a record has not changed since it was signed and anchored — not that
           what it says was ever accurate. Not a qualified electronic ledger under eIDAS 2.0, and not legal evidence
           in Serbia or Romania.
