@@ -45,6 +45,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@vbel/adapter-identity-static':
+        specifier: workspace:*
+        version: link:../../packages/adapter-identity-static
       '@vbel/adapter-solana':
         specifier: workspace:*
         version: link:../../packages/adapter-solana

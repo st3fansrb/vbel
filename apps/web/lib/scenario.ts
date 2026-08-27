@@ -1,4 +1,5 @@
-import { counterSignPreviousEvent, generateKeyPair, signEnvelope } from "@vbel/core";
+import { counterSignPreviousEvent, generateKeyPair, signEnvelope, type IssuerAttestation, type KeyPair } from "@vbel/core";
+import { StaticIdentityRegistry } from "@vbel/adapter-identity-static";
 import {
   buildAcceptanceEvent,
   buildCorrectionEvent,
@@ -12,14 +13,41 @@ export const SUPPLIER_ID = "urn:vbel:org:supplier-a";
 export const BUYER_ID = "urn:vbel:org:buyer-b";
 
 /**
+ * Trust root for this demo: a registry we assemble ourselves and can show
+ * in full, binding each issuerId to the actual key it signs with in this
+ * session. See adapter-identity-static — this is the honest placeholder
+ * for ENS, did:web or an eIDAS chain, not a stand-in for having solved
+ * identity.
+ */
+function buildRegistry(supplierPublicKeyHex: string, buyerPublicKeyHex: string): StaticIdentityRegistry {
+  const validFrom = new Date(Date.now() - 60_000).toISOString();
+  const attestations: IssuerAttestation[] = [
+    { issuerId: SUPPLIER_ID, publicKey: supplierPublicKeyHex, attestedBy: "urn:vbel:demo:registry", validFrom, validUntil: null, signature: null },
+    { issuerId: BUYER_ID, publicKey: buyerPublicKeyHex, attestedBy: "urn:vbel:demo:registry", validFrom, validUntil: null, signature: null },
+  ];
+  return new StaticIdentityRegistry({ registryId: "urn:vbel:demo:registry", attestations });
+}
+
+export interface Scenario {
+  records: LedgerRecord[];
+  resolver: StaticIdentityRegistry;
+  /**
+   * The buyer's key, kept only so a later correction can be issued by the
+   * same identity the registry attests — not a fresh, unregistered one.
+   */
+  buyerKeys: KeyPair;
+}
+
+/**
  * Builds and signs the shipment in the browser, with keys generated on load.
  * Nothing here is canned: the signatures are real ed25519 signatures over
  * real canonical bytes, so every verdict the UI shows was actually computed.
  */
-export async function buildScenario(): Promise<LedgerRecord[]> {
+export async function buildScenario(): Promise<Scenario> {
   const shipmentRef = `SHP-${Math.floor(Date.now() / 1000)}`;
   const supplier = await generateKeyPair();
   const buyer = await generateKeyPair();
+  const resolver = buildRegistry(supplier.publicKeyHex, buyer.publicKeyHex);
 
   const dispatchPayload: DispatchPayload = {
     shipmentRef,
@@ -64,29 +92,35 @@ export async function buildScenario(): Promise<LedgerRecord[]> {
     signerId: BUYER_ID,
   });
 
-  return [
-    {
-      label: "Dispatch",
-      event: dispatch,
-      storedPayload: dispatchPayload,
-      issuerPayload: dispatchPayload,
-      anchor: null,
-    },
-    {
-      label: "Acceptance",
-      event: acceptance,
-      storedPayload: acceptancePayload,
-      issuerPayload: acceptancePayload,
-      anchor: null,
-    },
-  ];
+  return {
+    records: [
+      {
+        label: "Dispatch",
+        event: dispatch,
+        storedPayload: dispatchPayload,
+        issuerPayload: dispatchPayload,
+        anchor: null,
+        chainVerification: null,
+      },
+      {
+        label: "Acceptance",
+        event: acceptance,
+        storedPayload: acceptancePayload,
+        issuerPayload: acceptancePayload,
+        anchor: null,
+        chainVerification: null,
+      },
+    ],
+    resolver,
+    buyerKeys: buyer,
+  };
 }
 
 /**
  * The correction is issued on demand rather than seeded, so the audience
  * watches it happen. It supersedes the acceptance without deleting it.
  */
-export async function buildCorrection(records: LedgerRecord[]): Promise<LedgerRecord> {
+export async function buildCorrection(records: LedgerRecord[], buyerKeys: KeyPair): Promise<LedgerRecord> {
   const acceptance = records.find((record) => record.label === "Acceptance");
   if (!acceptance) throw new Error("cannot correct: no acceptance record present");
 
@@ -103,7 +137,6 @@ export async function buildCorrection(records: LedgerRecord[]): Promise<LedgerRe
     ],
   };
 
-  const buyer = await generateKeyPair();
   const correction = await signEnvelope({
     envelope: buildCorrectionEvent({
       issuerId: BUYER_ID,
@@ -112,7 +145,7 @@ export async function buildCorrection(records: LedgerRecord[]): Promise<LedgerRe
       supersedes: acceptance.event.envelope.eventId,
       supersedeReason: "short shipment discovered after acceptance",
     }),
-    signer: buyer,
+    signer: buyerKeys,
     signerId: BUYER_ID,
   });
 
@@ -122,5 +155,6 @@ export async function buildCorrection(records: LedgerRecord[]): Promise<LedgerRe
     storedPayload: correctedPayload,
     issuerPayload: correctedPayload,
     anchor: null,
+    chainVerification: null,
   };
 }

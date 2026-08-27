@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { validateChain, type AnchorReceipt, type DerivedStatus } from "@vbel/core";
+import { validateChain, type AnchorReceipt, type DerivedStatus, type KeyPair, type LedgerVerificationResult } from "@vbel/core";
+import type { StaticIdentityRegistry } from "@vbel/adapter-identity-static";
 import { RecordCard } from "@/components/RecordCard";
 import { buildCorrection, buildScenario } from "@/lib/scenario";
 import { restore, tamperAcceptance } from "@/lib/tamper";
@@ -10,20 +11,26 @@ import type { LedgerRecord, RecordVerdict } from "@/lib/types";
 
 export default function Page() {
   const [records, setRecords] = useState<LedgerRecord[]>([]);
+  const [resolver, setResolver] = useState<StaticIdentityRegistry | null>(null);
+  const [buyerKeys, setBuyerKeys] = useState<KeyPair | null>(null);
   const [verdicts, setVerdicts] = useState<Map<string, RecordVerdict>>(new Map());
   const [anchoringId, setAnchoringId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    buildScenario().then(setRecords);
+    buildScenario().then(({ records, resolver, buyerKeys }) => {
+      setRecords(records);
+      setResolver(resolver);
+      setBuyerKeys(buyerKeys);
+    });
   }, []);
 
   // Every change to the records re-runs verification from scratch, in the
   // browser. Nothing is cached, so nothing can go stale and quietly lie.
   useEffect(() => {
-    if (records.length > 0) verifyAll(records).then(setVerdicts);
-  }, [records]);
+    if (records.length > 0) verifyAll(records, resolver ?? undefined).then(setVerdicts);
+  }, [records, resolver]);
 
   const chain = records.length > 0 ? validateChain(records.map((r) => r.event)) : null;
   const acceptance = records.find((r) => r.label === "Acceptance");
@@ -51,6 +58,23 @@ export default function Page() {
       setRecords((current) =>
         current.map((r) => (r.event.envelope.eventId === record.event.envelope.eventId ? { ...r, anchor: receipt } : r))
       );
+
+      // The anchor call returning a receipt only proves the transaction was
+      // submitted. Re-fetching it from the chain and confirming the memo
+      // still carries this hash is a separate check — see /api/verify.
+      const verifyResponse = await fetch("/api/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ eventHash: record.event.eventHash, receipt }),
+      });
+      if (verifyResponse.ok) {
+        const chainVerification = (await verifyResponse.json()) as LedgerVerificationResult;
+        setRecords((current) =>
+          current.map((r) =>
+            r.event.envelope.eventId === record.event.envelope.eventId ? { ...r, chainVerification } : r
+          )
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "anchoring failed");
     } finally {
@@ -65,9 +89,10 @@ export default function Page() {
   };
 
   const issueCorrection = async () => {
+    if (!buyerKeys) return;
     setBusy(true);
     try {
-      const correction = await buildCorrection(records);
+      const correction = await buildCorrection(records, buyerKeys);
       setRecords((current) => [...current, correction]);
     } finally {
       setBusy(false);

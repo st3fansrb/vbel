@@ -6,11 +6,12 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3000",
-    "build": "next build",
+    "build": "pnpm --filter @vbel/core --filter @vbel/config --filter @vbel/domain-delivery --filter @vbel/adapter-solana --filter @vbel/adapter-identity-static run build && next build",
     "start": "next start",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@vbel/adapter-identity-static": "workspace:*",
     "@vbel/adapter-solana": "workspace:*",
     "@vbel/config": "workspace:*",
     "@vbel/core": "workspace:*",

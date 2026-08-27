@@ -17,7 +17,13 @@ loadDotenv({ path: resolve(dirname(fileURLToPath(import.meta.url)), "../../.env"
 const nextConfig = {
   // Workspace packages ship TypeScript-built ESM; Next must transpile them
   // rather than treat them as prebuilt node_modules.
-  transpilePackages: ["@vbel/core", "@vbel/config", "@vbel/domain-delivery", "@vbel/adapter-solana"],
+  transpilePackages: [
+    "@vbel/core",
+    "@vbel/config",
+    "@vbel/domain-delivery",
+    "@vbel/adapter-solana",
+    "@vbel/adapter-identity-static",
+  ],
 };
 
 export default nextConfig;

@@ -87,14 +87,23 @@ export function RecordCard({
           </Field>
           <Field label="Anchor">
             {record.anchor ? (
-              <a
-                className="text-accent underline underline-offset-2 hover:no-underline"
-                href={explorerUrl(record.anchor.reference)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                slot {record.anchor.block}
-              </a>
+              <div className="flex flex-col gap-0.5">
+                <a
+                  className="text-accent underline underline-offset-2 hover:no-underline"
+                  href={explorerUrl(record.anchor.reference)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  slot {record.anchor.block}
+                </a>
+                {record.chainVerification === null ? (
+                  <span className="text-xs text-ink-faint">checking chain…</span>
+                ) : record.chainVerification.valid ? (
+                  <span className="text-xs text-verified">✓ re-read from chain, matches</span>
+                ) : (
+                  <span className="text-xs text-tampered">✗ chain re-read failed</span>
+                )}
+              </div>
             ) : (
               <button
                 onClick={onAnchor}

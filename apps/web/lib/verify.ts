@@ -1,13 +1,14 @@
-import { diffPayloads, verifyEvent, verifyPayload } from "@vbel/core";
+import { diffPayloads, verifyEvent, verifyPayload, type IdentityResolver } from "@vbel/core";
 import type { LedgerRecord, RecordVerdict } from "./types";
 
 /**
  * Runs entirely in the browser against the same @vbel/core the issuing API
  * uses. No server is consulted and no result is taken on trust — that is
- * the point of the verifier.
+ * the point of the verifier. The resolver is optional for the same reason:
+ * verification degrades gracefully with no identity source, it doesn't fail.
  */
-export async function verifyRecord(record: LedgerRecord): Promise<RecordVerdict> {
-  const signature = await verifyEvent(record.event);
+export async function verifyRecord(record: LedgerRecord, resolver?: IdentityResolver): Promise<RecordVerdict> {
+  const signature = await verifyEvent(record.event, resolver);
   const payload = verifyPayload(record.storedPayload, record.event.envelope);
 
   return {
@@ -20,9 +21,12 @@ export async function verifyRecord(record: LedgerRecord): Promise<RecordVerdict>
   };
 }
 
-export async function verifyAll(records: LedgerRecord[]): Promise<Map<string, RecordVerdict>> {
+export async function verifyAll(
+  records: LedgerRecord[],
+  resolver?: IdentityResolver
+): Promise<Map<string, RecordVerdict>> {
   const entries = await Promise.all(
-    records.map(async (record) => [record.event.envelope.eventId, await verifyRecord(record)] as const)
+    records.map(async (record) => [record.event.envelope.eventId, await verifyRecord(record, resolver)] as const)
   );
   return new Map(entries);
 }
